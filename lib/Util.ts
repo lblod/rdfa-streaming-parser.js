@@ -1,8 +1,8 @@
 import * as RDF from "@rdfjs/types";
-import {resolve} from "relative-to-absolute-iri";
-import {IActiveTag} from "./IActiveTag";
-import {RDFA_CONTENTTYPES, RdfaProfile} from "./RdfaProfile";
-import {DataFactory} from "rdf-data-factory";
+import { resolve } from "relative-to-absolute-iri";
+import { IActiveTag } from "./IActiveTag";
+import { RDFA_CONTENTTYPES, RdfaProfile } from "./RdfaProfile";
+import { DataFactory } from "rdf-data-factory";
 
 /**
  * A collection of utility functions.
@@ -48,10 +48,10 @@ export class Util {
    * @param {boolean} xmlnsPrefixMappings If prefixes should be extracted from xmlnsPrefixMappings.
    * @return {{[p: string]: string}} The new prefixes.
    */
-  public static parsePrefixes(attributes: {[s: string]: string},
-                              parentPrefixes: {[prefix: string]: string},
-                              xmlnsPrefixMappings: boolean): {[prefix: string]: string} {
-    const additionalPrefixes: {[prefix: string]: string} = {};
+  public static parsePrefixes(attributes: { [s: string]: string },
+    parentPrefixes: { [prefix: string]: string },
+    xmlnsPrefixMappings: boolean): { [prefix: string]: string } {
+    const additionalPrefixes: { [prefix: string]: string } = {};
     if (xmlnsPrefixMappings) {
       for (const attribute in attributes) {
         if (attribute.startsWith('xmlns')) {
@@ -61,7 +61,7 @@ export class Util {
     }
 
     if (attributes.prefix || Object.keys(additionalPrefixes).length > 0) {
-      const prefixes: {[prefix: string]: string} = { ...parentPrefixes, ...additionalPrefixes };
+      const prefixes: { [prefix: string]: string } = { ...parentPrefixes, ...additionalPrefixes };
 
       if (attributes.prefix) {
         let prefixMatch;
@@ -157,7 +157,7 @@ export class Util {
    * @returns {Term} A term.
    */
   public getResourceOrBaseIri(term: RDF.Term | boolean, activeTag: IActiveTag): RDF.NamedNode {
-    return term === true ? this.getBaseIriTerm(activeTag) : <RDF.NamedNode> term;
+    return term === true ? this.getBaseIriTerm(activeTag) : <RDF.NamedNode>term;
   }
 
   /**
@@ -178,10 +178,10 @@ export class Util {
    * @return {Term[]} The IRI terms.
    */
   public createVocabIris<B extends boolean>(terms: string, activeTag: IActiveTag, allowTerms: boolean,
-                                            allowBlankNode: B): B extends true
+    allowBlankNode: B): B extends true
     ? (RDF.BlankNode | RDF.NamedNode)[] : RDF.NamedNode[];
   public createVocabIris(terms: string, activeTag: IActiveTag, allowTerms: boolean,
-                         allowBlankNode: boolean): (RDF.NamedNode | RDF.BlankNode)[] {
+    allowBlankNode: boolean): (RDF.NamedNode | RDF.BlankNode)[] {
     return terms.split(/\s+/)
       .filter((term) => term && (allowTerms || term.indexOf(':') >= 0))
       .map((property) => this.createIri(property, activeTag, true, true, allowBlankNode))
@@ -204,6 +204,10 @@ export class Util {
       }
     }
     return this.dataFactory.literal(literal, activeTag.datatype || activeTag.language);
+  }
+
+  public createLiteralWithDatatype(literal: string, datatype: string): RDF.Literal {
+    return this.dataFactory.literal(literal, datatype);
   }
 
   /**
@@ -231,10 +235,10 @@ export class Util {
    * @return {Term} An RDF term or null.
    */
   public createIri<B extends boolean>(term: string, activeTag: IActiveTag, vocab: boolean, allowSafeCurie: boolean,
-                                      allowBlankNode: B): B extends true
+    allowBlankNode: B): B extends true
     ? (RDF.NamedNode | RDF.BlankNode) : RDF.NamedNode;
   public createIri<B extends boolean>(term: string, activeTag: IActiveTag, vocab: boolean, allowSafeCurie: boolean,
-                                      allowBlankNode: B): RDF.NamedNode | RDF.BlankNode {
+    allowBlankNode: B): RDF.NamedNode | RDF.BlankNode {
     term = term || '';
 
     if (!allowSafeCurie) {

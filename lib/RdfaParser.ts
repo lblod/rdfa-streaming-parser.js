@@ -104,6 +104,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
     // Create a new active tag and inherit language scope and baseIRI from parent
     const activeTag: IActiveTag = {
       collectChildTags: parentTag.collectChildTags,
+      collectCustomHtml: parentTag.collectCustomHtml,
       incompleteTriples: [],
       inlist: 'inlist' in attributes,
       listMapping: <{ [predicate: string]: (RDF.Term | boolean)[] }><any>[],
@@ -133,6 +134,20 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
       if (this.features.skipHandlingXmlLiteralChildren) {
         return;
       }
+    }
+
+    if (activeTag.collectCustomHtml) {
+      for (const prefix of Object.keys(parentTag.prefixesCustom).sort()) {
+        const suffix = parentTag.prefixesCustom[prefix];
+        const attributeKey = prefix === '' ? 'xmlns' : 'xmlns:' + prefix;
+        if (!(attributeKey in attributes)) {
+          attributes[attributeKey] = suffix;
+        }
+      }
+
+      const attributesSerialized = Object.keys(attributes).map((key) => `${key}="${attributes[key]}"`).join(' ');
+      activeTag.customHtml = [`<${name}${attributesSerialized ? ' ' + attributesSerialized : ''}>`];
+
     }
 
     let allowTermsInRelPredicates: boolean = true;
@@ -473,8 +488,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
           activeTag.collectChildTags = true;
         }
       } else if (this.options?.htmlPredicates?.length && activeTag.predicates.some(p => this.options.htmlPredicates.includes(p.value))) {
-        activeTag.collectChildTags = true;
-        activeTag.datatype = <RDF.NamedNode>this.util.createIri(Util.RDF + 'HTML', activeTag, true, true, false);
+        activeTag.collectCustomHtml = true;
       }
 
       else {
@@ -596,6 +610,9 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
     if (!activeTag.text) {
       activeTag.text = [];
     }
+    if (!activeTag.customHtml) {
+      activeTag.customHtml = [];
+    }
     activeTag.text.push(data);
   }
 
@@ -636,24 +653,40 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
       if (activeTag.predicates) {
         const subject = this.util.getResourceOrBaseIri(activeTag.subject, activeTag);
         let textSegments: string[] = activeTag.text || [];
+        let htmlSegments: string[] = activeTag.customHtml || [];
         if (activeTag.collectChildTags && parentTag.collectChildTags) {
           // If we are inside an XMLLiteral child that also has RDFa content, ignore the tag name that was collected.
           textSegments = textSegments.slice(1);
         }
+        if (activeTag.collectCustomHtml && parentTag.collectCustomHtml) {
+          htmlSegments = htmlSegments.slice(1);
+        }
         const object = this.util.createLiteral(textSegments.join(''), activeTag);
+        let htmlObject = null;
+        if (htmlSegments.length) {
+          htmlObject = this.util.createLiteralWithDatatype(htmlSegments.join(''), Util.RDF + 'HTML');
+        }
         if (activeTag.inlist) {
           for (const predicate of activeTag.predicates) {
             this.addListMapping(activeTag, subject, predicate, object);
+            if (htmlObject) {
+              this.addListMapping(activeTag, subject, predicate, htmlObject);
+            }
+
           }
         } else {
           for (const predicate of activeTag.predicates) {
             this.emitTriple(subject, predicate, object);
+            if (htmlObject) {
+              this.emitTriple(subject, predicate, htmlObject);
+            }
           }
         }
 
         // Reset text, unless the parent is also collecting text
         if (!parentTag.predicates) {
           activeTag.text = null;
+          activeTag.customHtml = null;
         }
       }
 
@@ -693,6 +726,9 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
     if (activeTag.collectChildTags && activeTag.text) {
       activeTag.text.push(`</${activeTag.name}>`);
     }
+    if (activeTag.collectCustomHtml && activeTag.customHtml) {
+      activeTag.customHtml.push(`</${activeTag.name}>`);
+    }
 
     // If we still have text contents, try to append it to the parent tag
     if (activeTag.text && parentTag) {
@@ -700,6 +736,13 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
         parentTag.text = activeTag.text;
       } else {
         parentTag.text = parentTag.text.concat(activeTag.text);
+      }
+    }
+    if (activeTag.customHtml && parentTag) {
+      if (!parentTag.customHtml) {
+        parentTag.customHtml = activeTag.customHtml;
+      } else {
+        parentTag.customHtml = parentTag.customHtml.concat(activeTag.customHtml);
       }
     }
   }
