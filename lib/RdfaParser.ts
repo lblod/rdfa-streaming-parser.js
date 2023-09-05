@@ -1,15 +1,15 @@
-import {DomHandler} from "domhandler";
+import { DomHandler } from "domhandler";
 import EventEmitter = NodeJS.EventEmitter;
-import {Parser as HtmlParser} from "htmlparser2";
+import { Parser as HtmlParser } from "htmlparser2";
 import * as RDF from "@rdfjs/types";
-import {PassThrough, Transform} from "readable-stream";
-import {IActiveTag} from "./IActiveTag";
-import {IHtmlParseListener} from "./IHtmlParseListener";
+import { PassThrough, Transform } from "readable-stream";
+import { IActiveTag } from "./IActiveTag";
+import { IHtmlParseListener } from "./IHtmlParseListener";
 import * as INITIAL_CONTEXT_XHTML from "./initial-context-xhtml.json";
 import * as INITIAL_CONTEXT from "./initial-context.json";
-import {IRdfaPattern} from "./IRdfaPattern";
-import {IRdfaFeatures, RDFA_FEATURES, RdfaProfile} from "./RdfaProfile";
-import {Util} from "./Util";
+import { IRdfaPattern } from "./IRdfaPattern";
+import { IRdfaFeatures, RDFA_FEATURES, RdfaProfile } from "./RdfaProfile";
+import { Util } from "./Util";
 
 /**
  * A stream transformer that parses RDFa (text) streams to an {@link RDF.Stream}.
@@ -22,8 +22,8 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
   private readonly parser: HtmlParser;
   private readonly features: IRdfaFeatures;
   private readonly htmlParseListener?: IHtmlParseListener;
-  private readonly rdfaPatterns: {[patternId: string]: IRdfaPattern};
-  private readonly pendingRdfaPatternCopies: {[copyTargetPatternId: string]: IActiveTag[]};
+  private readonly rdfaPatterns: { [patternId: string]: IRdfaPattern };
+  private readonly pendingRdfaPatternCopies: { [copyTargetPatternId: string]: IActiveTag[] };
 
   private readonly activeTagStack: IActiveTag[] = [];
 
@@ -53,7 +53,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
         ...INITIAL_CONTEXT['@context'],
         ...this.features.xhtmlInitialContext ? INITIAL_CONTEXT_XHTML['@context'] : {},
       },
-      prefixesCustom : {},
+      prefixesCustom: {},
       skipElement: false,
       vocab: options.vocab,
     });
@@ -83,7 +83,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
     callback();
   }
 
-  public onTagOpen(name: string, attributes: {[s: string]: string}) {
+  public onTagOpen(name: string, attributes: { [s: string]: string }) {
     // Determine the parent tag (ignore skipped tags)
     let parentTagI: number = this.activeTagStack.length - 1;
     while (parentTagI > 0 && this.activeTagStack[parentTagI].skipElement) {
@@ -106,7 +106,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
       collectChildTags: parentTag.collectChildTags,
       incompleteTriples: [],
       inlist: 'inlist' in attributes,
-      listMapping: <{[predicate: string]: (RDF.Term|boolean)[]}> <any> [],
+      listMapping: <{ [predicate: string]: (RDF.Term | boolean)[] }><any>[],
       listMappingLocal: parentTag.listMapping,
       localBaseIRI: parentTag.localBaseIRI,
       name,
@@ -464,13 +464,20 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
       // Save datatype attribute value in active tag
       let localObjectResource: RDF.Term | boolean;
       if ('datatype' in attributes) {
-        activeTag.datatype = <RDF.NamedNode> this.util.createIri(attributes.datatype, activeTag, true, true, false);
+        activeTag.datatype = <RDF.NamedNode>this.util.createIri(attributes.datatype, activeTag, true, true, false);
         if (activeTag.datatype
           && (activeTag.datatype.value === Util.RDF + 'XMLLiteral'
             || (this.features.htmlDatatype && activeTag.datatype.value === Util.RDF + 'HTML'))) {
+
+
           activeTag.collectChildTags = true;
         }
-      } else {
+      } else if (this.options?.htmlPredicates?.length && activeTag.predicates.some(p => this.options.htmlPredicates.includes(p.value))) {
+        activeTag.collectChildTags = true;
+        activeTag.datatype = <RDF.NamedNode>this.util.createIri(Util.RDF + 'HTML', activeTag, true, true, false);
+      }
+
+      else {
         // Try to determine resource
         if (!('rev' in attributes) && !('rel' in attributes) && !('content' in attributes)) {
           if ('resource' in attributes) {
@@ -747,7 +754,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
    * @param {Term | boolean} currentObjectResource The current object resource.
    */
   protected addListMapping(activeTag: IActiveTag, subject: RDF.Quad_Subject | boolean, predicate: RDF.Quad_Predicate,
-                           currentObjectResource: RDF.Quad_Object | boolean) {
+    currentObjectResource: RDF.Quad_Object | boolean) {
     if (activeTag.explicitNewSubject) {
       const bNode = this.util.createBlankNode();
       this.emitTriple(this.util.getResourceOrBaseIri(subject, activeTag), predicate, bNode);
@@ -841,7 +848,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
 
   protected initializeParser(xmlMode: boolean): HtmlParser {
     return new HtmlParser(
-      <DomHandler> <any> {
+      <DomHandler><any>{
         onclosetag: () => {
           try {
             this.onTagClose();
@@ -862,7 +869,7 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
             this.emit('error', e);
           }
         },
-        onopentag: (name: string, attributes: {[s: string]: string}) => {
+        onopentag: (name: string, attributes: { [s: string]: string }) => {
           try {
             this.onTagOpen(name, attributes);
             if (this.htmlParseListener) {
@@ -932,4 +939,10 @@ export interface IRdfaParserOptions {
    * An optional listener for the internal HTML parse events.
    */
   htmlParseListener?: IHtmlParseListener;
+
+  /**
+   * A list of html predicates. This is mainly required because vendors doesn't set the correct datatype.
+   *
+   */
+  htmlPredicates?: string[];
 }
