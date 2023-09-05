@@ -1,11 +1,11 @@
-import {DataFactory} from "rdf-data-factory";
+import { DataFactory } from "rdf-data-factory";
 import "jest-rdf";
 import * as RDF from "@rdfjs/types";
-import {PassThrough} from "stream";
-import {RdfaParser} from "../lib/RdfaParser";
-import {RDFA_FEATURES} from "../lib/RdfaProfile";
+import { PassThrough } from "stream";
+import { RdfaParser } from "../lib/RdfaParser";
+import { RDFA_FEATURES } from "../lib/RdfaProfile";
 import arrayifyStream from "arrayify-stream";
-
+import { readFileSync } from 'fs';
 const streamifyString = require('streamify-string');
 const quad = require('rdf-quad');
 
@@ -16,43 +16,43 @@ describe('RdfaParser', () => {
   it('should be constructable without args', () => {
     const instance = new RdfaParser();
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBeInstanceOf(DataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
-    expect((<any> instance).defaultGraph).toBe(DF.defaultGraph());
+    expect((<any>instance).util.dataFactory).toBeInstanceOf(DataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
+    expect((<any>instance).defaultGraph).toBe(DF.defaultGraph());
   });
 
   it('should be constructable with empty args', () => {
     const instance = new RdfaParser({});
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBeInstanceOf(DataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
-    expect((<any> instance).defaultGraph).toBe(DF.defaultGraph());
+    expect((<any>instance).util.dataFactory).toBeInstanceOf(DataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
+    expect((<any>instance).defaultGraph).toBe(DF.defaultGraph());
   });
 
   it('should be constructable with args with a custom data factory', () => {
     const dataFactory: any = { defaultGraph: () => 'abc', namedNode: () => DF.namedNode('abc') };
-    const instance = new RdfaParser({dataFactory});
+    const instance = new RdfaParser({ dataFactory });
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBe(dataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('abc'));
-    expect((<any> instance).defaultGraph).toBe('abc');
+    expect((<any>instance).util.dataFactory).toBe(dataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('abc'));
+    expect((<any>instance).defaultGraph).toBe('abc');
   });
 
   it('should be constructable with args with a custom base IRI', () => {
-    const instance = new RdfaParser({baseIRI: 'myBaseIRI'});
+    const instance = new RdfaParser({ baseIRI: 'myBaseIRI' });
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBeInstanceOf(DataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('myBaseIRI'));
-    expect((<any> instance).defaultGraph).toBe(DF.defaultGraph());
+    expect((<any>instance).util.dataFactory).toBeInstanceOf(DataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('myBaseIRI'));
+    expect((<any>instance).defaultGraph).toBe(DF.defaultGraph());
   });
 
   it('should be constructable with args with a custom default graph', () => {
     const defaultGraph = DF.namedNode('abc');
-    const instance = new RdfaParser({defaultGraph});
+    const instance = new RdfaParser({ defaultGraph });
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBeInstanceOf(DataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
-    expect((<any> instance).defaultGraph).toBe(defaultGraph);
+    expect((<any>instance).util.dataFactory).toBeInstanceOf(DataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode(''));
+    expect((<any>instance).defaultGraph).toBe(defaultGraph);
   });
 
   it('should be constructable with args with a custom data factory, base IRI and default graph', () => {
@@ -60,30 +60,30 @@ describe('RdfaParser', () => {
     const defaultGraph = DF.namedNode('abc');
     const instance = new RdfaParser({ dataFactory, baseIRI: 'myBaseIRI', defaultGraph });
     expect(instance).toBeInstanceOf(RdfaParser);
-    expect((<any> instance).util.dataFactory).toBe(dataFactory);
-    expect((<any> instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('abc'));
-    expect((<any> instance).defaultGraph).toBe(defaultGraph);
+    expect((<any>instance).util.dataFactory).toBe(dataFactory);
+    expect((<any>instance).util.baseIRI).toEqualRdfTerm(DF.namedNode('abc'));
+    expect((<any>instance).defaultGraph).toBe(defaultGraph);
   });
 
   it('should default to the empty profile when no content type, profile or features was set', () => {
     const instance = new RdfaParser({});
-    expect((<any> instance).features).toBe(RDFA_FEATURES['']);
+    expect((<any>instance).features).toBe(RDFA_FEATURES['']);
   });
 
   it('should allow custom features to be set', () => {
     const features: any = { a: 1 };
     const instance = new RdfaParser({ features });
-    expect((<any> instance).features).toBe(features);
+    expect((<any>instance).features).toBe(features);
   });
 
   it('should allow a profile to be set', () => {
     const instance = new RdfaParser({ profile: 'core' });
-    expect((<any> instance).features).toBe(RDFA_FEATURES.core);
+    expect((<any>instance).features).toBe(RDFA_FEATURES.core);
   });
 
   it('should allow a content type to be set', () => {
     const instance = new RdfaParser({ contentType: 'application/xml' });
-    expect((<any> instance).features).toBe(RDFA_FEATURES.xml);
+    expect((<any>instance).features).toBe(RDFA_FEATURES.xml);
   });
 
   describe('a default instance', () => {
@@ -776,6 +776,7 @@ rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#">
           ]);
       });
 
+
       it('rdf:XMLLiteral datatype to preserve all nested tags without xmlns and prefixes', async () => {
         return expect(await parse(parser, `<html>
 	<head>
@@ -875,14 +876,14 @@ rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 		<p property="dc:title" datatype="rdf:XMLLiteral"><b property="foaf:firstName">Mark</b></p>
 	</body>
 </html>`))
-          .toBeRdfIsomorphic([
-            quad('http://example.org/',
-              'http://purl.org/dc/elements/1.1/title',
-              '"<b property="foaf:firstName" xmlns:dc="http://purl.org/dc/elements/1.1/" ' +
-              'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ' +
-              'xmlns:xsd="http://www.w3.org/2001/XMLSchema#">Mark' +
-              '</b>"^^http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral'),
-          ]);
+            .toBeRdfIsomorphic([
+              quad('http://example.org/',
+                'http://purl.org/dc/elements/1.1/title',
+                '"<b property="foaf:firstName" xmlns:dc="http://purl.org/dc/elements/1.1/" ' +
+                'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ' +
+                'xmlns:xsd="http://www.w3.org/2001/XMLSchema#">Mark' +
+                '</b>"^^http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral'),
+            ]);
       });
 
       it('rdf:HTML datatype to preserve all nested tags when features.htmlDatatype is enabled', async () => {
@@ -945,7 +946,7 @@ foaf: http://xmlns.com/foaf/0.1/ xsd: http://www.w3.org/2001/XMLSchema#">
       });
 
       it('lang should be ignored when features.langAttribute is disabled', async () => {
-        parser = new RdfaParser({ baseIRI: 'http://example.org/', features: {}});
+        parser = new RdfaParser({ baseIRI: 'http://example.org/', features: {} });
         return expect(await parse(parser, `<html prefix="dc: http://purl.org/dc/elements/1.1/
 foaf: http://xmlns.com/foaf/0.1/ xsd: http://www.w3.org/2001/XMLSchema#">
 	<head>
@@ -1587,17 +1588,17 @@ foaf: http://xmlns.com/foaf/0.1/">
   </p>
 </body>
 </html>`))
-          .toBeRdfIsomorphic([
-            quad('http://example.org/',
-              'http://www.w3.org/ns/rdfa#usesVocabulary',
-              'http://schema.org/'),
-            quad('http://example.org/',
-              'http://schema.org/homepage',
-              '"Some Body"'),
-            quad('http://example.org/',
-              'http://schema.org/follow',
-              'http://homepage.org/'),
-          ]);
+            .toBeRdfIsomorphic([
+              quad('http://example.org/',
+                'http://www.w3.org/ns/rdfa#usesVocabulary',
+                'http://schema.org/'),
+              quad('http://example.org/',
+                'http://schema.org/homepage',
+                '"Some Body"'),
+              quad('http://example.org/',
+                'http://schema.org/follow',
+                'http://homepage.org/'),
+            ]);
       });
 
       it('and ignore rev if there is a property and rel is a non-CURIE and non-URI', async () => {
@@ -1997,7 +1998,7 @@ foaf: http://xmlns.com/foaf/0.1/">
                 name: 'span',
                 referenced: false,
                 rootPattern: false,
-                text: [ 'Muse' ],
+                text: ['Muse'],
               },
             ],
             constructedBlankNodes: [],
@@ -3596,14 +3597,14 @@ prefix="dc: http://purl.org/dc/elements/1.1/">
       <p>This is test #66.</p>
    </body>
 </html>`))
-          .toBeRdfIsomorphic([
-            quad('http://example.org/',
-              'http://xmlns.com/foaf/0.1/name',
-              '_:b'),
-            quad('_:b',
-              'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-              'http://xmlns.com/foaf/0.1/Document'),
-          ]);
+            .toBeRdfIsomorphic([
+              quad('http://example.org/',
+                'http://xmlns.com/foaf/0.1/name',
+                '_:b'),
+              quad('_:b',
+                'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+                'http://xmlns.com/foaf/0.1/Document'),
+            ]);
       });
 
       it('@typeof and @rel in <body>', async () => {
@@ -4003,7 +4004,7 @@ prefix="xhv: http://www.w3.org/1999/xhtml/vocab#">
     <span property="cite">cite</span>
   </div>
 </body></html>`))
-          .toBeRdfIsomorphic([]);
+            .toBeRdfIsomorphic([]);
       });
 
       it('property with blank node values should be ignored', async () => {
