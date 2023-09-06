@@ -207,7 +207,7 @@ export class Util {
   }
 
   public createLiteralWithDatatype(literal: string, datatype: string): RDF.Literal {
-    return this.dataFactory.literal(literal, datatype);
+    return this.dataFactory.literal(literal, this.dataFactory.namedNode(datatype));
   }
 
   /**
