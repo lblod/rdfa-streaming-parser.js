@@ -613,6 +613,9 @@ export class RdfaParser extends Transform implements RDF.Sink<EventEmitter, RDF.
     if (!activeTag.customHtml) {
       activeTag.customHtml = [];
     }
+    if (activeTag.collectCustomHtml) {
+      activeTag.customHtml.push(data);
+    }
     activeTag.text.push(data);
   }
 
