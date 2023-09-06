@@ -1,9 +1,10 @@
 # usage: bash release.sh 0.1.2
+set -xe
 git checkout master
 git pull
 
 npm version $1
-npm i
+yarn install
 git add .
 git commit -m "version $1"
 
